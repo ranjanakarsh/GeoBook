@@ -55,6 +55,46 @@ class GeoViewController: UIViewController, CLLocationManagerDelegate, MKMapViewD
         let region = MKCoordinateRegion(center: location, span: span)
         self.mapView.setRegion(region, animated: true)
     }
+    
+    func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
+        if self.requestedLocationID != nil {
+            let requestLocation = CLLocation(latitude: newLatitude, longitude: newLongitude)
+            CLGeocoder().reverseGeocodeLocation(requestLocation, completionHandler: { (placemarks, error) in
+                if let listOfPlacement = placemarks {
+                    if listOfPlacement.count > 0 {
+                        let newPlacemark = MKPlacemark(placemark: listOfPlacement[0])
+                        let item = MKMapItem(placemark: newPlacemark)
+                        item.name = self.titleLabel.text!
+                        let launchOptions = [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving]
+                        item.openInMaps(launchOptions: launchOptions)
+                    }
+                }
+                
+            })
+        }
+    }
+    
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        if annotation is MKUserLocation {
+            return nil
+        }
+        
+        let pinReuseID = "customAnnotation"
+        var pinView = self.mapView.dequeueReusableAnnotationView(withIdentifier: pinReuseID) as? MKMarkerAnnotationView
+        
+        if pinView == nil {
+            pinView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: pinReuseID)
+            pinView?.canShowCallout = true
+            pinView?.tintColor = UIColor.blue
+            
+            let button = UIButton(type: UIButton.ButtonType.detailDisclosure)
+            pinView?.rightCalloutAccessoryView = button
+        } else {
+            pinView?.annotation = annotation
+        }
+        
+        return pinView
+    }
         
     @IBAction func saveButtonPressed(_ sender: UIButton) {
         if self.validateFields(validateAnnotation: true) {
